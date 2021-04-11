@@ -1,5 +1,6 @@
 import json
 import pickle
+from typing import List
 
 import pandas as pd
 import plotly
@@ -12,7 +13,7 @@ from sqlalchemy import create_engine
 app = Flask(__name__)
 
 
-def tokenize(text: str) -> list(str):
+def tokenize(text: str) -> List[str]:
     """Tokenized a text.
 
     Args:
@@ -42,12 +43,24 @@ with open("../models/classifier.pkl", "rb") as f:
 def index():
 
     # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
     genre_counts = df.groupby("genre").count()["message"]
     genre_names = list(genre_counts.index)
 
+    target_counts = (
+        df.loc[:, ~df.columns.isin(["id", "message", "original", "genre"])]
+        .sum()
+        .sort_values(ascending=False)
+    )
+    target_names = list(target_counts.index)
+
+    text_len_bins = {
+        "0-100": df["message"].str.len().between(left=0, right=10).sum(),
+        "101-500": df["message"].str.len().between(left=11, right=100).sum(),
+        "501-1000": df["message"].str.len().between(left=101, right=1000).sum(),
+        "1001-": df["message"].str.len().between(left=1001, right=9999999).sum(),
+    }
+
     # create visuals
-    # TODO: Below is an example - modify to create your own visuals
     graphs = [
         {
             "data": [Bar(x=genre_names, y=genre_counts)],
@@ -56,7 +69,23 @@ def index():
                 "yaxis": {"title": "Count"},
                 "xaxis": {"title": "Genre"},
             },
-        }
+        },
+        {
+            "data": [Bar(x=target_names, y=target_counts)],
+            "layout": {
+                "title": "Distribution of Targets",
+                "yaxis": {"title": "Count"},
+                "xaxis": {"title": "Target"},
+            },
+        },
+        {
+            "data": [Bar(x=list(text_len_bins.keys()), y=list(text_len_bins.values()))],
+            "layout": {
+                "title": "Message Lengths",
+                "yaxis": {"title": "Count", "type": "log"},
+                "xaxis": {"title": "Message Length"},
+            },
+        },
     ]
 
     # encode plotly graphs in JSON

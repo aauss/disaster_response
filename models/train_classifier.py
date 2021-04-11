@@ -1,6 +1,7 @@
 import pickle
 import sys
 from pathlib import Path
+from typing import List, Tuple
 
 import nltk
 import pandas as pd
@@ -16,9 +17,10 @@ from sqlalchemy import create_engine
 
 nltk.download("stopwords")
 nltk.download("punkt")
+nltk.download("wordnet")
 
 
-def load_data(database_filepath: str) -> tuple(pd.DataFrame, pd.DataFrame, list(str)):
+def load_data(database_filepath: str) -> Tuple[pd.DataFrame, pd.DataFrame, List[str]]:
     """Loads data from sqlite data base and splits into predictors and targets. 
 
     Args:
@@ -35,7 +37,7 @@ def load_data(database_filepath: str) -> tuple(pd.DataFrame, pd.DataFrame, list(
     return X, Y, category_names
 
 
-def tokenize(text: str) -> list(str):
+def tokenize(text: str) -> List[str]:
     """Tokenized a text.
 
     Args:
@@ -50,7 +52,7 @@ def tokenize(text: str) -> list(str):
     return [lemmatizer.lemmatize(token).lower().strip() for token in tokens]
 
 
-def build_model() -> Pipeline:
+def build_model() -> GridSearchCV:
     """Builds text classification model.
 
     Text classifier uses a tfidf-vectorization with a custom tokenizer
@@ -59,7 +61,7 @@ def build_model() -> Pipeline:
     Returns:
         Text classifier
     """
-    return Pipeline(
+    pipeline = Pipeline(
         [
             ("count_vect", CountVectorizer(tokenizer=tokenize)),
             ("tfidf", TfidfTransformer()),
@@ -67,12 +69,20 @@ def build_model() -> Pipeline:
         ]
     )
 
+    parameters = {
+        "count_vect__ngram_range": ((1, 1), (1, 2)),
+        "tfidf__use_idf": (True, False),
+        "clf__estimator__alpha": [0.1, 0.5, 1],
+    }
+
+    return GridSearchCV(pipeline, param_grid=parameters)
+
 
 def evaluate_model(
-    model: Pipeline,
+    model: GridSearchCV,
     X_test: pd.DataFrame,
     Y_test: pd.DataFrame,
-    category_names: list(str),
+    category_names: List[str],
 ) -> None:
     """Evaluates a model per predicted class printing several metrics.
 
@@ -89,7 +99,7 @@ def evaluate_model(
         print("\n")
 
 
-def save_model(model: Pipeline, model_filepath: str) -> None:
+def save_model(model: GridSearchCV, model_filepath: str) -> None:
     """Save a machine learning model.
 
     Args:
