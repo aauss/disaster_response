@@ -37,6 +37,7 @@ def clean_data(df: pd.DataFrame):
     for column in categories:
         categories[column] = categories[column].str[-1]
         categories[column] = pd.to_numeric(categories[column])
+        categories[column] = [1 if i > 0 else 0 for i in categories[column]]
 
     df = df.drop("categories", axis=1)
     df = pd.concat([df, categories], axis=1)
@@ -51,7 +52,7 @@ def save_data(df: pd.DataFrame, database_filename: str) -> None:
         database_filename: Path to database.
     """
     engine = create_engine(f"sqlite:///{database_filename}")
-    df.to_sql(Path(database_filename).stem, engine, index=False)
+    df.to_sql(Path(database_filename).stem, engine, index=False, if_exists="replace")
 
 
 def main() -> None:

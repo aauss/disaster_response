@@ -8,7 +8,7 @@ import pandas as pd
 from nltk import WordNetLemmatizer, word_tokenize
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
-from sklearn.metrics import classification_report, f1_score
+from sklearn.metrics import f1_score, precision_score, recall_score
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.naive_bayes import MultinomialNB
@@ -75,7 +75,7 @@ def build_model() -> GridSearchCV:
         "clf__estimator__alpha": [0.1, 0.5, 1],
     }
 
-    return GridSearchCV(pipeline, param_grid=parameters)
+    return GridSearchCV(pipeline, param_grid=parameters, n_jobs=-1, verbose=2)
 
 
 def evaluate_model(
@@ -93,10 +93,26 @@ def evaluate_model(
         category_names: List of targets
     """
     y_pred = model.predict(X_test["message"])
+    categories = []
+    f1s = []
+    precisions = []
+    recalls = []
     for i, category in enumerate((category_names)):
-        print(category)
-        print(classification_report(Y_test[category], y_pred[:, i]))
-        print("\n")
+        categories.append(category)
+        f1s.append(f1_score(Y_test[category], y_pred[:, i]))
+        precisions.append(precision_score(Y_test[category], y_pred[:, i]))
+        recalls.append(recall_score(Y_test[category], y_pred[:, i]))
+    results = pd.DataFrame(
+        {
+            "category": categories,
+            "F1": f1s,
+            "Precision": precisions,
+            "Recalls": recalls,
+        }
+    )
+    results.to_csv(Path(__file__).resolve().parent / "results.csv", index=False)
+    print(results, end="\n\n")
+    print("Results saved under results.csv")
 
 
 def save_model(model: GridSearchCV, model_filepath: str) -> None:
