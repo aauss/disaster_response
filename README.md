@@ -31,7 +31,7 @@ To run this app, you need to install the libraries listed in `env.yml`. If you h
 ### Results
 
 The final app looks like this:
-![App Screenshot]("app/app_screenshot.PNG")
+![App Screenshot](app/app_screenshot.PNG)
 
 Furthermore, the text classifier shows mixed results. Some categories are learned very well with F1 score beyond 0.8. But there are many categories for which the classifier does not learn anything. The average F1 score over all categories is 0.19 which is not very satisfying. Thus, it would be an important next step to improve the classifier. Running the pipeline results in a results.csv which you can inspect yourself for the results.
 
